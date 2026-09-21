@@ -1,6 +1,6 @@
 # Docker
 
-## Build
+## Build 가이드
 
 ```bash
 # RDS 없이 로컬 테스트용 (H2)
