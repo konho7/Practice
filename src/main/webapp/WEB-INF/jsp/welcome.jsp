@@ -11,4 +11,10 @@
             <img class="img-responsive" alt="A cat and a dog" src="${petsImage}"/>
         </div>
     </div>
+    <div class="row">
+        <div class="col-md-12">
+            <spring:url value="/resources/images/puppy.jpg" htmlEscape="true" var="puppyImage"/>
+            <img class="img-responsive" alt="A happy puppy" src="${puppyImage}"/>
+        </div>
+    </div>
 </petclinic:layout>

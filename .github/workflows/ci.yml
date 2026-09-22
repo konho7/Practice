@@ -35,3 +35,10 @@ jobs:
           docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      - name: Trigger ASG Instance Refresh
+        run: |
+          aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name assac-asg-was \
+            --region ${{ secrets.AWS_REGION }} \
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}'
