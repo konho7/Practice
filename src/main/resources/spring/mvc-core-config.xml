@@ -20,9 +20,18 @@
         - POJOs labeled with the @Controller and @Service annotations are auto-detected.
     -->
     <context:component-scan
-        base-package="org.springframework.samples.petclinic.web"/>
+        base-package="org.springframework.samples.petclinic.web,
+                      org.springframework.samples.petclinic.monitoring"/>
 
     <mvc:annotation-driven conversion-service="conversionService"/>
+
+    <mvc:interceptors>
+        <mvc:interceptor>
+            <mvc:mapping path="/**"/>
+            <mvc:exclude-mapping path="/actuator/prometheus"/>
+            <ref bean="httpRequestMetricsInterceptor"/>
+        </mvc:interceptor>
+    </mvc:interceptors>
 
     <!--  all resources inside folder src/main/webapp/resources are mapped so they can be refered to inside JSP files
         (see htmlHeader.jsp for more details) -->

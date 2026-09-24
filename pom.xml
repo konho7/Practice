@@ -65,6 +65,7 @@
         <!-- Others -->
         <jackson.version>2.12.4</jackson.version>
         <aspectj.version>1.9.7</aspectj.version>
+        <micrometer.version>1.17.0</micrometer.version>
 
         <!-- Maven plugins -->
         <jetty-maven-plugin.version>9.4.43.v20210629</jetty-maven-plugin.version>
@@ -119,6 +120,17 @@
             <groupId>org.apache.taglibs</groupId>
             <artifactId>taglibs-standard-jstlel</artifactId>
             <version>${taglibs-standard.version}</version>
+        </dependency>
+        <!-- Prometheus metrics -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-core</artifactId>
+            <version>${micrometer.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-prometheus</artifactId>
+            <version>${micrometer.version}</version>
         </dependency>
         <!--  JSon -->
         <dependency>
