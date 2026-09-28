@@ -542,10 +542,10 @@
             <properties>
                 <db.script>mysql</db.script>
                 <jpa.database>MYSQL</jpa.database>
-                <jdbc.driverClassName>com.mysql.cj.jdbc.Driver</jdbc.driverClassName>
-                <jdbc.url>jdbc:mysql://CHANGE_ME_AT_RUNTIME:3306/petclinic?useUnicode=true</jdbc.url>
-                <jdbc.username>CHANGE_ME_AT_RUNTIME</jdbc.username>
-                <jdbc.password>CHANGE_ME_AT_RUNTIME</jdbc.password>
+                <jdbc.driverClassName>com.amazonaws.secretsmanager.sql.AWSSecretsManagerMySQLDriver</jdbc.driverClassName>
+                <jdbc.url>jdbc-secretsmanager:mysql://assac-rds-petclinic.cvaaou42ag1v.ap-northeast-2.rds.amazonaws.com:3306/petclinic?useUnicode=true</jdbc.url>
+                <jdbc.username>assac/rds/petclinic</jdbc.username>
+                <jdbc.password>unused-secrets-manager-driver-fetches-this-at-runtime</jdbc.password>
             </properties>
             <dependencies>
                 <dependency>
