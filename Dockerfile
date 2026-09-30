@@ -2,16 +2,14 @@
 FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
 
-# 의존성 관련 파일만 먼저 복사 (레이어 캐싱)
 COPY pom.xml .
 COPY mvnw .
 COPY .mvn .mvn
 ARG DB_PROFILE=H2
 RUN ./mvnw -P ${DB_PROFILE} dependency:go-offline -B
 
-# 나머지 소스코드는 이후에 복사
 COPY . .
-RUN ./mvnw -DskipTests -P ${DB_PROFILE} package -B --offline
+RUN ./mvnw -DskipTests -P ${DB_PROFILE} package -B
 
 # 2단계: Jetty 위에 WAR 얹어서 실행
 FROM jetty:9.4-jdk17
