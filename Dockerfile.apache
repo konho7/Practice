@@ -1,0 +1,14 @@
+# Web 티어: 정적 리소스 서빙 + 동적 요청은 WAS로 리버스 프록시
+# 정적 리소스(css 포함, wro4j로 컴파일된 산출물)는 CI에서 Maven 빌드 후 target/petclinic/resources/에서 가져옴
+FROM httpd:2.4
+
+# mod_proxy, mod_proxy_http 활성화를 위한 설정 파일 교체
+COPY apache-config/httpd.conf /usr/local/apache2/conf/httpd.conf
+
+# 빌드된 정적 리소스 복사 (css는 target/에만 존재, less/images/fonts는 소스와 동일)
+COPY target/petclinic/resources/ /usr/local/apache2/htdocs/resources/
+
+EXPOSE 80
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD bash -c 'echo > /dev/tcp/127.0.0.1/80' || exit 1
