@@ -7,6 +7,9 @@ COPY apache-config/httpd.conf /usr/local/apache2/conf/httpd.conf
 
 # 빌드된 정적 리소스 복사 (css는 target/에만 존재, less/images/fonts는 소스와 동일)
 COPY target/petclinic/resources/ /usr/local/apache2/htdocs/resources/
+COPY web-static/404.html /usr/local/apache2/htdocs/404.html
+COPY web-static/stylesheets/ /usr/local/apache2/htdocs/stylesheets/
+COPY web-static/javascripts/ /usr/local/apache2/htdocs/javascripts/
 
 EXPOSE 80
 
