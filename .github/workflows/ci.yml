@@ -60,28 +60,48 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Trigger WAS ASG Instance Refresh
+      - name: Trigger WAS ASG Instance Refresh and wait
         run: |
-          aws autoscaling start-instance-refresh \
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name assac-asg-was \
             --region ${{ secrets.AWS_REGION }} \
-            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}'
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
+            --query 'InstanceRefreshId' --output text)
+          echo "WAS InstanceRefreshId: $REFRESH_ID"
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name assac-asg-was \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --region ${{ secrets.AWS_REGION }} \
+              --query 'InstanceRefreshes[0].Status' --output text)
+            echo "WAS refresh status: $STATUS"
+            if [ "$STATUS" = "Successful" ]; then break; fi
+            if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
+              echo "WAS instance refresh did not succeed: $STATUS"
+              exit 1
+            fi
+            sleep 15
+          done
 
-      - name: Wait for WAS refresh to complete
+      - name: Trigger Web ASG Instance Refresh and wait
         run: |
-          aws autoscaling wait instance-refresh-successful \
-            --auto-scaling-group-name assac-asg-was \
-            --region ${{ secrets.AWS_REGION }}
-
-      - name: Trigger Web ASG Instance Refresh
-        run: |
-          aws autoscaling start-instance-refresh \
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name assac-asg-web \
             --region ${{ secrets.AWS_REGION }} \
-            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}'
-
-      - name: Wait for Web refresh to complete
-        run: |
-          aws autoscaling wait instance-refresh-successful \
-            --auto-scaling-group-name assac-asg-web \
-            --region ${{ secrets.AWS_REGION }}
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
+            --query 'InstanceRefreshId' --output text)
+          echo "Web InstanceRefreshId: $REFRESH_ID"
+          while true; do
+            STATUS=$(aws autoscaling describe-instance-refreshes \
+              --auto-scaling-group-name assac-asg-web \
+              --instance-refresh-ids "$REFRESH_ID" \
+              --region ${{ secrets.AWS_REGION }} \
+              --query 'InstanceRefreshes[0].Status' --output text)
+            echo "Web refresh status: $STATUS"
+            if [ "$STATUS" = "Successful" ]; then break; fi
+            if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
+              echo "Web instance refresh did not succeed: $STATUS"
+              exit 1
+            fi
+            sleep 15
+          done
