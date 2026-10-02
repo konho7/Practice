@@ -14,6 +14,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Build with Maven
+        run: ./mvnw -DskipTests -P MySQL package -B
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: target/
+          retention-days: 1
+
+  deploy-was:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: target/
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -24,15 +53,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Build with Maven
-        run: ./mvnw -DskipTests -P MySQL package -B
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -45,8 +65,44 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=was
+          cache-to: type=gha,mode=max,scope=was
+
+      - name: Trigger WAS ASG Instance Refresh
+        run: |
+          REFRESH_ID=$(aws autoscaling start-instance-refresh \
+            --auto-scaling-group-name assac-asg-was \
+            --region ${{ secrets.AWS_REGION }} \
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
+            --query 'InstanceRefreshId' --output text)
+          echo "WAS InstanceRefreshId: $REFRESH_ID (트리거만 하고 완료는 기다리지 않음 — 진행 상황은 CloudWatch/콘솔에서 확인)"
+
+  deploy-web:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: target/
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
       - name: Build, tag, and push Web image
         uses: docker/build-push-action@v6
@@ -57,51 +113,14 @@ jobs:
           tags: |
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_WEB }}:${{ github.sha }}
             ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY_WEB }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=web
+          cache-to: type=gha,mode=max,scope=web
 
-      - name: Trigger WAS ASG Instance Refresh and wait
-        run: |
-          REFRESH_ID=$(aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name assac-asg-was \
-            --region ${{ secrets.AWS_REGION }} \
-            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
-            --query 'InstanceRefreshId' --output text)
-          echo "WAS InstanceRefreshId: $REFRESH_ID"
-          while true; do
-            STATUS=$(aws autoscaling describe-instance-refreshes \
-              --auto-scaling-group-name assac-asg-was \
-              --instance-refresh-ids "$REFRESH_ID" \
-              --region ${{ secrets.AWS_REGION }} \
-              --query 'InstanceRefreshes[0].Status' --output text)
-            echo "WAS refresh status: $STATUS"
-            if [ "$STATUS" = "Successful" ]; then break; fi
-            if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
-              echo "WAS instance refresh did not succeed: $STATUS"
-              exit 1
-            fi
-            sleep 15
-          done
-
-      - name: Trigger Web ASG Instance Refresh and wait
+      - name: Trigger Web ASG Instance Refresh
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name assac-asg-web \
             --region ${{ secrets.AWS_REGION }} \
             --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
             --query 'InstanceRefreshId' --output text)
-          echo "Web InstanceRefreshId: $REFRESH_ID"
-          while true; do
-            STATUS=$(aws autoscaling describe-instance-refreshes \
-              --auto-scaling-group-name assac-asg-web \
-              --instance-refresh-ids "$REFRESH_ID" \
-              --region ${{ secrets.AWS_REGION }} \
-              --query 'InstanceRefreshes[0].Status' --output text)
-            echo "Web refresh status: $STATUS"
-            if [ "$STATUS" = "Successful" ]; then break; fi
-            if [ "$STATUS" = "Failed" ] || [ "$STATUS" = "Cancelled" ]; then
-              echo "Web instance refresh did not succeed: $STATUS"
-              exit 1
-            fi
-            sleep 15
-          done
+          echo "Web InstanceRefreshId: $REFRESH_ID (트리거만 하고 완료는 기다리지 않음 — 진행 상황은 CloudWatch/콘솔에서 확인)"
