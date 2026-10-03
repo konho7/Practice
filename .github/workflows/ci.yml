@@ -71,7 +71,7 @@ jobs:
       - name: Trigger WAS ASG Instance Refresh
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name assac-asg-was \
+            --auto-scaling-group-name gh/was \
             --region ${{ secrets.AWS_REGION }} \
             --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
             --query 'InstanceRefreshId' --output text)
@@ -119,7 +119,7 @@ jobs:
       - name: Trigger Web ASG Instance Refresh
         run: |
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
-            --auto-scaling-group-name assac-asg-web \
+            --auto-scaling-group-name gh/web \
             --region ${{ secrets.AWS_REGION }} \
             --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
             --query 'InstanceRefreshId' --output text)
