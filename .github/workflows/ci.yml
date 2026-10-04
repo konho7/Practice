@@ -73,7 +73,7 @@ jobs:
           REFRESH_ID=$(aws autoscaling start-instance-refresh \
             --auto-scaling-group-name gh/was \
             --region ${{ secrets.AWS_REGION }} \
-            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 60}' \
+            --preferences '{"MinHealthyPercentage": 50, "InstanceWarmup": 300}' \
             --query 'InstanceRefreshId' --output text)
           echo "WAS InstanceRefreshId: $REFRESH_ID (트리거만 하고 완료는 기다리지 않음 — 진행 상황은 CloudWatch/콘솔에서 확인)"
 
