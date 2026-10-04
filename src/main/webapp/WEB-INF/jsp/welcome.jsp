@@ -5,7 +5,7 @@
 
 <petclinic:layout pageName="home">
     <h2><fmt:message key="Hello"/></h2>
-    <p>ASSAC-petclinic-3team</p>
+    <p>Hello Geonho</p>
     <div class="row">
         <div class="col-md-12">
             <spring:url value="/resources/images/pets.png" htmlEscape="true" var="petsImage"/>
